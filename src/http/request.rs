@@ -24,7 +24,7 @@ pub struct Request {
     pub version: String,
     pub headers: Vec<Header>,
     pub body: String,
-    
+
     stream: TcpStream
 }
 
@@ -36,7 +36,7 @@ impl Request {
         for header in response.headers.iter() {
             headers.push(format!("{key}: {value}", key=header.key(),value=header.value()));
         }
-        
+
         // Write the response text
         let response_text: String = format!(
             "HTTP/{version} {status_int} {status}\r\n{headers}\r\n\r\n{body}",
@@ -57,12 +57,12 @@ impl From<TcpStream> for Request {
     fn from(value: TcpStream) -> Self {
         // Create placeholder values
         let method: Method;
-        let url: String;
+        let mut url: String;
         let version: String;
-        
+
         let mut headers: Vec<Header> = Vec::new();
         let mut content_length: usize = 0;
-        
+
         // Read the stream into a BufReader
         let mut reader: BufReader<&TcpStream> = BufReader::new(&value);
 
@@ -82,11 +82,16 @@ impl From<TcpStream> for Request {
             Some(captures) => captures,
             None => panic!("Unable to parse the first line of the request: {first_line}")
         };
-        
+
         method = Method::from(&captures["method"]);
         url = captures["url"].to_string();
         version = captures["version"].to_string();
         
+        // If the URL does not end with a slash, add it
+        if !url.starts_with('/') {
+            url += "/";
+        }
+
         // Interpret the headers
         loop {
             // Read in the line
@@ -95,32 +100,32 @@ impl From<TcpStream> for Request {
                 Ok(_) => (),
                 Err(e) => panic!("Unable to read in header line: {e}")
             }
-            
+
             // Test if the line is empty
             if line.as_str() == "\r\n" {
                 break;
             }
-            
+
             // Parse the header
             let header: Header = Header::from(line);
             if header.key().as_str() == "Content-Length" {
                 content_length = header.value().parse::<usize>().unwrap_or(0);
             }
         }
-        
+
         // Read the body
         let mut body: Vec<u8> = vec![0u8; content_length];
-        
+
         match reader.read_exact(&mut body) {
             Ok(_) => (),
             Err(e) => panic!("Unable to read body of request: {e}")
         };
-        
+
         let body: String = match String::from_utf8(body) {
             Ok(s) => s,
             Err(e) => panic!("Unable to convert UTF-8 array into a string: {e}")
         };
-        
+
         // Return
         Self {
             method,
@@ -130,7 +135,7 @@ impl From<TcpStream> for Request {
             body,
             stream: value
         }
-        
+
     }
 }
 
