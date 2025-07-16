@@ -1,6 +1,6 @@
 use std::{
     io::Result,
-    net::{TcpListener, TcpStream},
+    net::TcpListener,
     path::PathBuf
 };
 use crate::http::{
@@ -20,7 +20,7 @@ pub struct WebServer {
     static_dir: Option<PathBuf>,
     
     /* MAP URLs TO FUNCTIONS */
-    url_map: Vec<Box<(Regex, dyn Fn(Request) -> Response)>>
+    url_map: Vec<(Regex, Box<dyn Fn(&Request) -> Response>)>
 }
 
 
@@ -51,9 +51,42 @@ impl WebServer {
         self.static_dir = None;
     }
     
+    pub fn add_path(&mut self, pattern: &str, function: impl Fn(&Request) -> Response + 'static) {
+        let re: Regex = Regex::new(&format!("^{pattern}$")).unwrap();
+        self.url_map.push(
+            (re, Box::new(function))
+        )
+    }
+    
     /* HANDLE REQUESTS */
-    fn handle(&self, request: &Request) -> Response {
+    fn serve_static(path: &PathBuf) -> Response {
         todo!()
+    }
+    
+    
+    fn handle(&self, request: &Request) -> Response {
+        // Get the URL of the request
+        let url: &str = request.url.as_str();
+        
+        if let Some(static_url) = &self.static_url {
+            if url.starts_with(static_url) {
+                // Test if static files should be served
+                if let Some(dir) = &self.static_dir {
+                    return Self::serve_static(dir);
+                } else {
+                    panic!("Static files are disabled, but a static file is expected: {url}")
+                } 
+            }
+        }
+        
+        // Match the URL to the given patterns
+        for (pattern, function) in self.url_map.iter() {
+            if pattern.is_match(url) {
+                return function(request);
+            }
+        }
+        
+        panic!("Unable to match url ({url}) to any of the patterns.")
     }
     
     /* START SERVER */
@@ -64,12 +97,11 @@ impl WebServer {
         
         // Listen to incoming requests
         for stream in listener.incoming() {
-            println!("Incoming stream...");
-            
             let stream = stream?;
             
             // Interpret the request
-            let request: Request = Request::from(stream);
+            let mut request: Request = Request::from(stream);
+            println!("{request}");
             
             // Handle the request
             let response: Response = self.handle(&request);
