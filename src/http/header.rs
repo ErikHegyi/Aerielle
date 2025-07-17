@@ -34,3 +34,11 @@ impl From<String> for Header {
         }
     }
 }
+
+
+#[macro_export]
+macro_rules! header {
+    ($key: tt : $value: tt) => {
+        Header::new($key.to_string(), $value.to_string())
+    };
+}
