@@ -5,7 +5,8 @@ use std::{
 };
 use crate::http::{
     Request,
-    Response
+    Response,
+    Status
 };
 use regex::Regex;
 
@@ -20,7 +21,11 @@ pub struct WebServer {
     static_dir: Option<PathBuf>,
 
     /* MAP URLs TO FUNCTIONS */
-    url_map: Vec<(Regex, Box<dyn Fn(&Request) -> Response>)>
+    url_map: Vec<(Regex, Box<dyn Fn(&Request) -> Response>)>,
+    
+    /* ERROR FUNCTIONS */
+    server_error: Box<dyn Fn(&Request) -> Response>,
+    not_found_error: Box<dyn Fn(&Request) -> Response>
 }
 
 
@@ -58,6 +63,14 @@ impl WebServer {
         )
     }
     
+    pub fn set_server_error(&mut self, function: impl Fn(&Request) -> Response + 'static) {
+        self.server_error = Box::new(function);
+    }
+    
+    pub fn set_not_found_error(&mut self, function: impl Fn(&Request) -> Response + 'static) {
+        self.not_found_error = Box::new(function);
+    }
+    
     /* ACCESS PROPERTIES */
     pub fn static_enabled(&self) -> bool {
         self.static_dir != None
@@ -87,11 +100,18 @@ impl WebServer {
         // Match the URL to the given patterns
         for (pattern, function) in self.url_map.iter() {
             if pattern.is_match(url) {
-                return function(request);
+                let response: Response =  function(request);
+                return if response.status == Status::InternalServerError {
+                    (self.server_error)(request)
+                } else if response.status == Status::NotFound {
+                    (self.not_found_error)(request)
+                } else {
+                    function(request)
+                }
             }
         }
 
-        panic!("Unable to match url ({url}) to any of the patterns.")
+        (self.not_found_error)(request)
     }
 
     /* START SERVER */
@@ -117,6 +137,21 @@ impl WebServer {
 
         Ok(())
     }
+    
+    /* BUILT-IN RESPONSES */
+    pub fn server_error(_: &Request) -> Response {
+        Response::new(
+            Status::InternalServerError,
+            String::from("<h1>500 Server Error</h1>")
+        )
+    }
+    
+    pub fn not_found(_: &Request) -> Response {
+        Response::new(
+            Status::NotFound,
+            String::from("<h1>404 Not Found</h1>")
+        )
+    }
 }
 
 
@@ -127,7 +162,9 @@ impl Default for WebServer {
             port: 8000,
             static_url: Some("/static".to_string()),
             static_dir: None,
-            url_map: Vec::new()
+            url_map: Vec::new(),
+            server_error: Box::new(WebServer::server_error),
+            not_found_error: Box::new(WebServer::not_found)
         }
     }
 }

@@ -22,4 +22,18 @@ impl Response {
     pub fn add_header(&mut self, header: Header) {
         self.headers.push(header);
     }
+    
+    pub fn server_error() -> Self {
+        Self::new(
+            Status::InternalServerError,
+            String::new()
+        )
+    }
+    
+    pub fn not_found() -> Self {
+        Self::new(
+            Status::InternalServerError,
+            String::new()
+        )
+    }
 }
