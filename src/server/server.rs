@@ -73,12 +73,37 @@ impl WebServer {
     
     /* ACCESS PROPERTIES */
     pub fn static_enabled(&self) -> bool {
-        self.static_dir != None
+        self.static_dir != None && self.static_url != None
     }
 
     /* HANDLE REQUESTS */
-    fn serve_static(path: &str) -> Response {
-        todo!()
+    fn serve_static(&self, request: &Request, url: &str) -> Response {
+        if let Some(static_url) = &self.static_url {
+            // Trim the string
+            let mut trimmed: String = url
+                .trim_start_matches(static_url)
+                .replace('/', "\\");
+            
+            if trimmed.starts_with('/') {
+                trimmed = trimmed[1..].to_string();
+            }
+            
+            // Join the path
+            if let Some(static_path) = &self.static_dir {
+                let path: PathBuf = static_path.join(&trimmed);
+                
+                // Read in the file
+                let response: Response = Response::read_in(path);
+                return if response.status == Status::InternalServerError {
+                    (self.server_error)(request)
+                } else if response.status == Status::NotFound {
+                    (self.not_found_error)(request)
+                } else {
+                    response
+                }
+            }
+        }
+        panic!("Static files are disabled, but a static file is expected: {url}");
     }
 
 
@@ -90,7 +115,7 @@ impl WebServer {
             if url.starts_with(static_url) {
                 // Test if static files should be served
                 if self.static_enabled() {
-                    return Self::serve_static(url);
+                    return self.serve_static(request, url);
                 } else {
                     panic!("Static files are disabled, but a static file is expected: {url}")
                 }
@@ -178,7 +203,7 @@ impl Default for WebServer {
             ip: "localhost".to_string(),
             port: 8000,
             static_url: Some("/static".to_string()),
-            static_dir: None,
+            static_dir: Some(PathBuf::from("static")),
             url_map: Vec::new(),
             server_error: Box::new(WebServer::server_error),
             not_found_error: Box::new(WebServer::not_found)
