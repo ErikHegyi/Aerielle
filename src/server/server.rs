@@ -1,6 +1,6 @@
 use std::{
     io::Result,
-    net::TcpListener,
+    net::{ TcpListener, UdpSocket },
     path::PathBuf
 };
 use crate::http::{
@@ -120,7 +120,9 @@ impl WebServer {
         // Start the TCP listener
         let url: String = format!("{ip}:{port}", ip=self.ip, port=self.port);
         let listener = TcpListener::bind(url)?;
-
+        
+        println!("Listening for requests on {ip}:{port}...", ip=self.ip, port=self.port);
+        
         // Listen to incoming requests
         for stream in listener.incoming() {
             let stream = stream?;
@@ -151,6 +153,20 @@ impl WebServer {
         Response::new(
             Status::NotFound,
             String::from("<h1>404 Not Found</h1>")
+        )
+    }
+    
+    /* UTILITY FUNCTIONS */
+    pub fn local_ip_address() -> Result<String> {
+        let socket: UdpSocket = UdpSocket::bind("0.0.0.0:0")?;
+        socket.connect("8.8.8.8:80")?;
+        Ok(
+            socket.local_addr()?
+                .to_string()
+                .split(':')
+                .nth(0)
+                .unwrap()
+                .to_string()
         )
     }
 }
