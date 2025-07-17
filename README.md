@@ -25,7 +25,7 @@ fn main() {
     let mut server = WebServer::new();  // Starts a server on localhost:8000
     
     // Set up paths
-    server.add_path("/", index);
+    server.add_path("/", index);  // 'localhost:8000/' will now call the index function
     
     // Start the server (blocks the thread)
     server.start().unwrap();
@@ -35,41 +35,67 @@ fn main() {
 That's it! Create the server, add the paths and the functions it should run, and start the server.  
 The function definitions should look like this:
 ```rust
-use aerielle::http::{Request, Response, Status, Header};
+use aerielle::{
+    WebServer,
+    http::{Request, Response, Status, Header},
+    html::context
+};
 
 
-fn function(request: &Request) -> Response {
+fn function(server: &WebServer, request: &Request) -> Response {
     /* Your logic */
     
-    // Create the response
-    let mut response = Response::new(Status::OK, body);
-    
-    // Add headers if you want
-    let header = Header::new(
-        "key".to_string(),
-        "value".to_string()
-    );
-    response.add_header(header);
-    
-    // Return the response
-    response
+    // Render an HTML page
+    server.render(
+        "template.html",  // The name of your HTML file inside your 'templates' folder
+        context!{
+            "key": "value"  // Here you define what should be passed to your HTML page in key-value pairs
+        }
+    )
 }
 ```
 
 ## A simple, Hello World webpage
+Create a `templates` folder inside your project directory.
+Your project structure should look something like this:
+```
+project
+- src
+- - main.rs
+- Cargo.toml
+- Cargo.lock
+- templates
+```
+Define your `index.html` page and place it inside your `templates` folder:
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+    <p>{{ text }}</p>
+</body>
+</html>
+```
+And then create your Rust server:
 ```rust
 use aerielle::{
     WebServer,
-    http::{Request, Response, Status, Header}
+    http::{Request, Response, Status, Header},
+    html::context
 };
 
 
-fn index(request: &Request) -> Response {
-    Response::new(
-        Status::OK,
-        String::from(
-            "<h1>Hello World</h1>"
-        )
+fn index(server: &WebServer, request: &Request) -> Response {
+    server.render(
+        "index.html",  // The name of your HTML file inside the templates folder
+        // Define what you want to pass to your HTML page
+        context!{
+            "title": "Aerielle",
+            "text": "Aerielle is wonderful!"
+        }
     )
 }
 
