@@ -21,7 +21,7 @@ pub struct WebServer {
     static_dir: Option<PathBuf>,
 
     /* MAP URLs TO FUNCTIONS */
-    url_map: Vec<(Regex, Box<dyn Fn(&Request) -> Response>)>,
+    url_map: Vec<(Regex, Box<dyn Fn(&Self, &Request) -> Response>)>,
     
     /* ERROR FUNCTIONS */
     server_error: Box<dyn Fn(&Request) -> Response>,
@@ -56,7 +56,7 @@ impl WebServer {
         self.static_dir = None;
     }
 
-    pub fn add_path(&mut self, pattern: &str, function: impl Fn(&Request) -> Response + 'static) {
+    pub fn add_path(&mut self, pattern: &str, function: impl Fn(&Self, &Request) -> Response + 'static) {
         let re: Regex = Regex::new(&format!("^{pattern}$")).unwrap();
         self.url_map.push(
             (re, Box::new(function))
@@ -125,13 +125,13 @@ impl WebServer {
         // Match the URL to the given patterns
         for (pattern, function) in self.url_map.iter() {
             if pattern.is_match(url) {
-                let response: Response = function(request);
+                let response: Response = function(&self, request);
                 return if response.status == Status::InternalServerError {
                     (self.server_error)(request)
                 } else if response.status == Status::NotFound {
                     (self.not_found_error)(request)
                 } else {
-                    function(request)
+                    function(&self, request)
                 }
             }
         }
