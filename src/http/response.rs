@@ -3,7 +3,10 @@ use std::{
     path::PathBuf,
     io::ErrorKind
 };
-use crate::http::{Header, Status};
+use crate::{
+    header,
+    http::{Header, Status}
+};
 
 
 pub struct Response {
@@ -48,13 +51,13 @@ impl Response {
         let content_type: Header = match path.extension() {
             Some(ext) => match ext.to_str() {
                 Some(ext) => match ext {
-                    "css" => Header::new("Content-Type".to_string(), "text/css".to_string()),
-                    "js" | "ts" => Header::new("Content-Type".to_string(), "application/javascript".to_string()),
-                    _ => Header::new("Content-Type".to_string(), "text/html".to_string())
+                    "css" => header!("Content-Type": "text/css"),
+                    "js" => header!("Content-Type": "application/javascript"),
+                    _ => header!("Content-Type": "text/html")
                 },
-                None => Header::new("Content-Type".to_string(), "text/html".to_string())
+                None => header!("Content-Type": "text/html")
             },
-            None => Header::new("Content-Type".to_string(), "text/html".to_string())
+            None => header!("Content-Type": "text/html")
         };
         
         // Read in the file
