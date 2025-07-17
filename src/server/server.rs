@@ -100,7 +100,7 @@ impl WebServer {
         // Match the URL to the given patterns
         for (pattern, function) in self.url_map.iter() {
             if pattern.is_match(url) {
-                let response: Response =  function(request);
+                let response: Response = function(request);
                 return if response.status == Status::InternalServerError {
                     (self.server_error)(request)
                 } else if response.status == Status::NotFound {
@@ -110,7 +110,8 @@ impl WebServer {
                 }
             }
         }
-
+        
+        // If the pattern was not found, return a 404 error
         (self.not_found_error)(request)
     }
 
