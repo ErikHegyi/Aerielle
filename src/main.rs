@@ -4,10 +4,11 @@ mod http;
 mod html;
 
 
-fn serve(request: &http::Request) -> http::Response {
-    http::Response::new(
-        http::Status::OK, String::from("<h1>Hello, world!</h1>")
-    )
+fn serve(s: &server::WebServer, request: &http::Request) -> http::Response {
+    s.render("index.html", context!{
+        "title": "this is my kingdom come",
+        "text": "kms"
+    })
 }
 
 

@@ -1,15 +1,14 @@
 use std::{
     io::Result,
     net::{ TcpListener, UdpSocket },
-    path::PathBuf
+    path::{Path, PathBuf},
+    env::current_dir
 };
-use crate::http::{
-    Request,
-    Response,
-    Status
+use crate::{
+    http::{Request, Response, Status},
+    html::{render, Context}
 };
 use regex::Regex;
-
 
 pub struct WebServer {
     /* SERVER DATA */
@@ -19,6 +18,7 @@ pub struct WebServer {
     /* STATIC */
     static_url: Option<String>,
     static_dir: Option<PathBuf>,
+    templates: PathBuf,
 
     /* MAP URLs TO FUNCTIONS */
     url_map: Vec<(Regex, Box<dyn Fn(&Self, &Request) -> Response>)>,
@@ -54,6 +54,10 @@ impl WebServer {
     pub fn disable_static(&mut self) {
         self.static_url = None;
         self.static_dir = None;
+    }
+    
+    pub fn set_templates_folder(&mut self, templates_folder: PathBuf) {
+        self.templates = templates_folder;
     }
 
     pub fn add_path(&mut self, pattern: &str, function: impl Fn(&Self, &Request) -> Response + 'static) {
@@ -105,7 +109,10 @@ impl WebServer {
         }
         panic!("Static files are disabled, but a static file is expected: {url}");
     }
-
+    
+    pub fn render(&self, template: impl AsRef<Path>, context: Context) -> Response {
+        render(self.templates.join(template), context)
+    }
 
     fn handle(&self, request: &Request) -> Response {
         // Get the URL of the request
@@ -206,7 +213,8 @@ impl Default for WebServer {
             static_dir: Some(PathBuf::from("static")),
             url_map: Vec::new(),
             server_error: Box::new(WebServer::server_error),
-            not_found_error: Box::new(WebServer::not_found)
+            not_found_error: Box::new(WebServer::not_found),
+            templates: current_dir().unwrap().parent().unwrap().join("templates")
         }
     }
 }
