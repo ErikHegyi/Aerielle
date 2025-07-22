@@ -80,7 +80,7 @@ impl From<TcpStream> for Request {
 
         let captures = match request_line_regex.captures(first_line.as_str()) {
             Some(captures) => captures,
-            None => panic!("Unable to parse the first line of the request: {first_line}")
+            None => panic!("Unable to parse the first line of the request: \"{first_line}\"")
         };
 
         method = Method::from(&captures["method"]);
