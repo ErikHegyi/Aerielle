@@ -80,6 +80,10 @@ impl WebServer {
         self.static_dir != None && self.static_url != None
     }
 
+    pub fn static_folder(&self) -> Option<PathBuf> {
+        self.static_dir.clone()
+    }
+
     /* HANDLE REQUESTS */
     fn serve_static(&self, request: &Request, url: &str) -> Response {
         if let Some(static_url) = &self.static_url {
