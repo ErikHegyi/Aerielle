@@ -90,16 +90,23 @@ impl WebServer {
             // Trim the string
             let mut trimmed: String = url
                 .trim_start_matches(static_url)
-                .replace('/', "\\");
+                .replace('/', "\\")
+                .trim_end_matches('\\')
+                .to_string();
             
-            if trimmed.starts_with('/') {
+            if trimmed.starts_with('\\') {
                 trimmed = trimmed[1..].to_string();
             }
             
             // Join the path
             if let Some(static_path) = &self.static_dir {
-                let path: PathBuf = static_path.join(&trimmed);
-                
+                let path: PathBuf = current_dir()  // dir/src
+                    .unwrap()
+                    .parent() // dir
+                    .unwrap()
+                    .join(static_path) // dir/static
+                    .join(&trimmed);  // dir/static/path
+
                 // Read in the file
                 let response: Response = Response::read_in(path);
                 return if response.status == Status::InternalServerError {
