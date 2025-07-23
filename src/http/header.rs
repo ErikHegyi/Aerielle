@@ -22,15 +22,27 @@ impl Header {
 
 impl From<String> for Header {
     fn from(value: String) -> Self {
-        let index: usize = match value.find(": ") {
-            Some(i) => i,
-            None => panic!("Unable to parse header: \"{value}\"")
-        };
-        let (key, value) = value.split_at(index);
-        
-        Header {
-            key: key.to_string(),
-            value: value.to_string()
+        match value.is_empty() {
+            // If the string is empty, return an empty header
+            true => Self {
+                key: String::new(),
+                value: String::new()
+            },
+
+            // If the string is not empty, parse it
+            false => {
+                // Split the header into a key and a value
+                let index: usize = match value.find(": ") {
+                    Some(i) => i,
+                    None => panic!("Unable to parse header: \"{value}\"")
+                };
+                let (key, value) = value.split_at(index);
+
+                Self {
+                    key: key.to_string(),
+                    value: value.to_string()
+                }
+            }
         }
     }
 }
