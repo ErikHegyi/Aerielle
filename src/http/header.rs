@@ -24,7 +24,7 @@ impl From<String> for Header {
     fn from(value: String) -> Self {
         let index: usize = match value.find(": ") {
             Some(i) => i,
-            None => panic!("Unable to parse header: {value}")
+            None => panic!("Unable to parse header: \"{value}\"")
         };
         let (key, value) = value.split_at(index);
         
