@@ -122,7 +122,7 @@ impl WebServer {
     }
     
     pub fn render(&self, template: impl AsRef<Path>, context: Context) -> Response {
-        render(self.templates.join(template), context)
+        render(self, self.templates.join(template), context)
     }
 
     fn handle(&self, request: &Request) -> Response {

@@ -1,18 +1,45 @@
-use std::fs::read_to_string;
-use std::hash::Hash;
-use std::path::Path;
-use crate::header;
-use crate::html::Context;
-use crate::http::{Header, Response, Status};
+use std::{
+    fs::read_to_string,
+    hash::Hash,
+    path::Path
+};
+use std::path::PathBuf;
+use crate::{
+    header,
+    html::Context,
+    http::{Header, Response, Status},
+    server::WebServer
+};
 
 
 fn execute(
+    server: &WebServer,
     command: &str,
-    context: &Context
+    context: &mut Context
 ) -> String {
     if command.contains("if") { todo!() }
     else if command.contains("for") { todo!() }
-    else if command.contains("static") { todo!() }
+
+    // Serve static files - format: static folder/file.extension
+    else if command.contains("static") {
+        // Get the static folder
+        let folder: PathBuf = match server.static_folder() {
+            Some(folder) => folder,
+            None => panic!("Static files are disabled, but a static file was requested in an HTML template: \"{command}\"")
+        };
+
+        // Parse the path
+        // Convert "static folder/file.extension" to "static/folder/file.extension"
+        let path: &str = command
+            .trim_start_matches("static")
+            .trim_start_matches("/")
+            .trim_end_matches("/")
+            .trim();
+
+        format!("/{static_folder}/{path}/", static_folder = folder.display())
+    }
+
+    // Variable
     else {
         match context.get(&command.to_string()) {
             Some(c) => c.clone(),
@@ -26,8 +53,9 @@ fn execute(
 }
 
 pub fn render(
+    server: &WebServer,
     template: impl AsRef<Path>,
-    context: Context
+    mut context: Context
 ) -> Response {
     // Read in the file
     let file: String = read_to_string(template).unwrap();
@@ -41,7 +69,8 @@ pub fn render(
         if i >= 2 {
             if command {
                 if file.chars().nth(i + 1) == Some('}') && file.chars().nth(i + 2) == Some('}') {
-                    html += execute(current.trim(), &context).as_str();
+                    html += execute(server, current.trim(), &mut context).as_str();
+                    println!("{html}");
                     current.clear();
                     command = false;
                 } else {
@@ -78,20 +107,4 @@ pub fn render(
     
     // Return
     response
-}
-
-
-macro_rules! render {
-    ($template: expr) => {
-        {
-            use crate::html::render;
-            render($template, context!())
-        }
-    };
-    ($template: expr, $context: expr) => {
-        {
-            use crate::html::render;
-            render($template, $context)
-        }
-    }
 }
