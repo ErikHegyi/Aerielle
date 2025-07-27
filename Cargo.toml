@@ -5,3 +5,6 @@ edition = "2024"
 
 [dependencies]
 regex = "1.11.1"
+minijinja = { version = "2.11.0", features = ["loader"] }
+tokio = "1.47.0"
+sqlx = "0.8.6"

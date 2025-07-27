@@ -1,14 +1,13 @@
-use std::{
-    io::Result,
-    net::{ TcpListener, UdpSocket },
-    path::{Path, PathBuf},
-    env::current_dir
-};
+use std::{io::Result, net::{TcpListener, UdpSocket}, path::PathBuf, env::current_dir, fs::read_to_string};
+use std::fs::read_dir;
+use std::io::ErrorKind;
 use crate::{
     http::{Request, Response, Status},
-    html::{render, Context}
+    html::render
 };
 use regex::Regex;
+use minijinja as jinja;
+
 
 pub struct WebServer {
     /* SERVER DATA */
@@ -25,7 +24,10 @@ pub struct WebServer {
     
     /* ERROR FUNCTIONS */
     server_error: Box<dyn Fn(&Request) -> Response>,
-    not_found_error: Box<dyn Fn(&Request) -> Response>
+    not_found_error: Box<dyn Fn(&Request) -> Response>,
+    
+    /* TEMPLATE RENDERING */
+    environment: jinja::Environment<'static>
 }
 
 
@@ -67,6 +69,34 @@ impl WebServer {
         )
     }
     
+    pub fn read_in_templates(&mut self) {
+        let files = match read_dir(self.templates.as_path()) {
+            Ok(f) => f,
+            Err(e) => panic!("Unable to read in templates folder: {e}")
+        };
+        
+        for file in files {
+            let file = file.unwrap();
+            let name = file.file_name().display().to_string();
+            self.add_template(name);
+        }
+    }
+    
+    pub fn add_template(&mut self, name: String) {
+        let body = match read_to_string(self.templates.join(&name)) {
+            Ok(s) => s,
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => panic!("Unable to find file \"{name}\" in templates folder \"{folder}\"", folder=self.templates.display()),
+                _ => panic!("Something went wrong while reading in \"{name}\": {e}")
+            }
+        };
+        match self.environment
+            .add_template_owned(name.clone(), body) {
+            Ok(_) => (),
+            Err(e) => panic!("Unable to add template {name}: {e}")
+        }
+    }
+    
     pub fn set_server_error(&mut self, function: impl Fn(&Request) -> Response + 'static) {
         self.server_error = Box::new(function);
     }
@@ -78,6 +108,10 @@ impl WebServer {
     /* ACCESS PROPERTIES */
     pub fn static_enabled(&self) -> bool {
         self.static_dir != None && self.static_url != None
+    }
+    
+    pub fn get_environment(&self) -> &jinja::Environment<'static> {
+        &self.environment
     }
 
     /* HANDLE REQUESTS */
@@ -110,8 +144,8 @@ impl WebServer {
         panic!("Static files are disabled, but a static file is expected: {url}");
     }
     
-    pub fn render(&self, template: impl AsRef<Path>, context: Context) -> Response {
-        render(self.templates.join(template), context)
+    pub fn render(&self, template: &str, context: jinja::Value) -> Response {
+        render(self, template, context)
     }
 
     fn handle(&self, request: &Request) -> Response {
@@ -148,7 +182,10 @@ impl WebServer {
     }
 
     /* START SERVER */
-    pub fn start(&self) -> Result<()> {
+    pub fn start(&mut self) -> Result<()> {
+        // Read in templates
+        self.read_in_templates();
+        
         // Start the TCP listener
         let url: String = format!("{ip}:{port}", ip=self.ip, port=self.port);
         let listener = TcpListener::bind(url)?;
@@ -214,7 +251,8 @@ impl Default for WebServer {
             url_map: Vec::new(),
             server_error: Box::new(WebServer::server_error),
             not_found_error: Box::new(WebServer::not_found),
-            templates: current_dir().unwrap().parent().unwrap().join("templates")
+            templates: current_dir().unwrap().parent().unwrap().join("templates"),
+            environment: jinja::Environment::new()
         }
     }
 }

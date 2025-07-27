@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 pub type Context = HashMap<String, String>;
 
-
+/*
 #[macro_export]
 macro_rules! context {
     { $($key: tt : $value: tt),* } => {
@@ -18,4 +18,4 @@ macro_rules! context {
             map
         }
     }
-}
+}*/
