@@ -1,6 +1,11 @@
-use std::{io::Result, net::{TcpListener, UdpSocket}, path::PathBuf, env::current_dir, fs::read_to_string};
-use std::fs::read_dir;
-use std::io::ErrorKind;
+use std::{
+    io::{Result, ErrorKind},
+    fs::read_dir,
+    net::{TcpListener, UdpSocket},
+    path::PathBuf,
+    env::current_dir,
+    fs::read_to_string
+};
 use crate::{
     http::{Request, Response, Status},
     html::render
