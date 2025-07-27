@@ -70,7 +70,7 @@ impl From<TcpStream> for Request {
         let mut first_line: String = String::default();
         match reader.read_line(&mut first_line) {
             Ok(_) => (),
-            Err(e) => panic!("Unable to read in first line of request: {e}")
+            Err(e) => panic!("Unable to read in first line of request: {e}"),
         };
 
         // Interpret the first line
@@ -78,14 +78,23 @@ impl From<TcpStream> for Request {
             r"^(?<method>GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE|PATCH)\s(?<url>[a-zA-Z0-9/%\.~_:?#\[\]@!$&'()*+,;=-]+)\sHTTP/(?<version>\d\.\d)\r?\n?$"
         ).unwrap();
 
-        let captures = match request_line_regex.captures(first_line.as_str()) {
-            Some(captures) => captures,
-            None => panic!("Unable to parse the first line of the request: {first_line}")
-        };
+        match first_line.is_empty() {
+            true => {
+                method = Method::GET;
+                url = String::from("/");
+                version = String::from("1.1")
+            },
+            false => {
+                let captures = match request_line_regex.captures(first_line.as_str()) {
+                    Some(captures) => captures,
+                    None => panic!("Unable to parse the first line of the request: \"{first_line}\"")
+                };
 
-        method = Method::from(&captures["method"]);
-        url = captures["url"].to_string();
-        version = captures["version"].to_string();
+                method = Method::from(&captures["method"]);
+                url = captures["url"].to_string();
+                version = captures["version"].to_string();
+            }
+        };
         
         // If the URL does not end with a slash, add it
         if !url.starts_with('/') {
