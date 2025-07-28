@@ -12,10 +12,11 @@ pub fn render(
     context: Value
 ) -> Response {
     match server
-        .get_environment()
         .get_template(name)
         .expect(format!("Unable to fetch template: {name}").as_str())
-        .render(context) {
+        .render(context)
+    {
+        // Rendering was successful
         Ok(body) => {
             let mut response = Response::new(Status::OK, body);
             response.add_header(
@@ -23,6 +24,7 @@ pub fn render(
             );
             response
         },
+        // Rendering was unsuccessful
         Err(e) => {
             eprintln!("Error while rendering template: {name} ({e})");
             Response::server_error()

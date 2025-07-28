@@ -4,7 +4,8 @@ use std::{
     net::{TcpListener, UdpSocket},
     path::PathBuf,
     env::current_dir,
-    fs::read_to_string
+    fs::read_to_string,
+    result::Result as StdResult
 };
 use crate::{
     http::{Request, Response, Status},
@@ -103,6 +104,10 @@ impl WebServer {
             Ok(_) => (),
             Err(e) => panic!("Unable to add template {name}: {e}")
         }
+    }
+    
+    pub fn get_template(&self, name: &str) -> StdResult<jinja::Template, jinja::Error> {
+        self.get_environment().get_template(name)
     }
     
     pub fn set_server_error(&mut self, function: impl Fn(&Request) -> Response + 'static) {
