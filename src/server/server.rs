@@ -86,6 +86,7 @@ impl WebServer {
         
         for file in files {
             let file = file.unwrap();
+            // todo!("Read in subdirectories")
             let name = file.file_name().display().to_string();
             self.add_template(name);
         }
