@@ -13,7 +13,10 @@ use crate::{
 };
 use regex::Regex;
 use minijinja as jinja;
+
+#[cfg(feature = "_db_must")]
 use crate::sql::Database;
+
 
 pub struct WebServer {
     /* SERVER DATA */
@@ -36,6 +39,7 @@ pub struct WebServer {
     environment: jinja::Environment<'static>,
     
     /* DATABASE */
+    #[cfg(feature = "_db_must")]
     database: Option<Database>
 }
 
@@ -118,9 +122,10 @@ impl WebServer {
     pub fn set_not_found_error(&mut self, function: impl Fn(&Request) -> Response + 'static) {
         self.not_found_error = Box::new(function);
     }
-    
-    pub fn connect_to_database(&mut self, url: &str) {
-        self.database = Some(Database::connect(url.to_string()))
+
+    #[cfg(feature = "_db_must")]
+    pub fn connect_to_database(&mut self, database: Database) {
+        self.database = Some(database)
     }
     
     /* ACCESS PROPERTIES */
@@ -131,7 +136,8 @@ impl WebServer {
     pub fn get_environment(&self) -> &jinja::Environment<'static> {
         &self.environment
     }
-    
+
+    #[cfg(feature = "_db_must")]
     pub fn get_database(&self) -> &Database {
         if let Some(db) = &self.database { db }
         else { panic!("Tried to access database, but no database was set.") }
@@ -276,6 +282,7 @@ impl Default for WebServer {
             not_found_error: Box::new(WebServer::not_found),
             templates: current_dir().unwrap().parent().unwrap().join("templates"),
             environment: jinja::Environment::new(),
+            #[cfg(feature = "_db_must")]
             database: None
         }
     }
