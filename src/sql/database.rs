@@ -1,32 +1,155 @@
 use sqlx;
 use futures::executor::block_on;
 use std::thread;
+use sqlx::{Error, Executor};
+use sqlx::postgres::PgQueryResult;
 use crate::sql::Table;
 
 
-pub struct Database {
-    pool: sqlx::Pool<sqlx::Any>,
+#[cfg(any(
+    all(feature = "database_mysql", feature = "database_postgres"),
+    all(feature = "database_mysql", feature = "database_sqlite"),
+    all(feature = "database_postgres", feature = "database_sqlite")
+))]
+compile_error!("Only one database driver may be enabled!");
+
+
+#[cfg(feature = "database_mysql")]
+pub struct Database
+{
+    pool: sqlx::Pool<sqlx::MySql>,
     tables: Vec<Table>
 }
 
 
+#[cfg(feature = "database_mysql")]
 impl Database {
-    pub fn connect(url: String) -> Database {
+    pub fn connect(url: &'static str) -> Database {
         // Connect to the database on a new thread
         let pool = thread::spawn(move || {
-             block_on(sqlx::Pool::<sqlx::Any>::connect(&url))
-                 .expect("Unable to connect to database")
+            sqlx::any::install_default_drivers();
+            block_on(
+                sqlx::Pool::<sqlx::MySql>::connect(url)
+            )
+                .expect("Unable to connect to database")
         })
             .join()
             .expect("Thread crashed while connecting to database");
-        
-        Database {
-            pool,
-            tables: Vec::new()
-        }
+
+        Database { pool, tables: Vec::new() }
     }
-    
+}
+
+#[cfg(feature = "database_postgres")]
+pub struct Database
+{
+    pool: sqlx::Pool<sqlx::Postgres>,
+    tables: Vec<Table>
+}
+
+
+#[cfg(feature = "database_postgres")]
+impl Database {
+    pub fn connect(url: &'static str) -> Database {
+        // Connect to the database on a new thread
+        let pool = thread::spawn(move || {
+            sqlx::any::install_default_drivers();
+            block_on(
+                sqlx::Pool::<sqlx::Postgres>::connect(url)
+            )
+                .expect("Unable to connect to database")
+        })
+            .join()
+            .expect("Thread crashed while connecting to database");
+
+        Database { pool, tables: Vec::new() }
+    }
+}
+
+#[cfg(feature = "database_sqlite")]
+pub struct Database
+{
+    pool: sqlx::Pool<sqlx::Sqlite>,
+    tables: Vec<Table>
+}
+
+
+#[cfg(feature = "database_sqlite")]
+impl Database {
+    pub fn connect(url: &'static str) -> Database {
+        // Connect to the database on a new thread
+        let pool = thread::spawn(move || {
+            sqlx::any::install_default_drivers();
+            block_on(
+                sqlx::Pool::<sqlx::Sqlite>::connect(url)
+            )
+                .expect("Unable to connect to database")
+        })
+            .join()
+            .expect("Thread crashed while connecting to database");
+
+        Database { pool, tables: Vec::new() }
+    }
+}
+
+
+#[cfg(any(
+    feature = "database_mysql",
+    feature = "database_postgres",
+    feature = "database_sqlite"
+))]
+impl Database {    
     pub fn query() { todo!() }
     pub fn insert() { todo!() }
-    pub fn migrate() { todo!() }
+    
+    pub fn execute(&mut self, query: String) -> Result<PgQueryResult, Error> {
+        let pool = self.pool.clone();
+        thread::spawn(move || {
+           block_on(
+               pool.execute(query.as_str())
+           )
+        })
+            .join()
+            .expect("Thread crashed while executing query")
+            
+    }
+    
+    pub fn clear_database(&self) {
+        let pool = self.pool.clone();
+        thread::spawn(move || {
+            
+        })
+            .join()
+            .expect("Unable to clear database");
+    }
+    
+    pub fn migrate(&self) {
+        self.clear_database();
+        for table in &self.tables {
+            let pool = self.pool.clone();
+            
+            let query = format!(
+                "CREATE TABLE {table_name}({parameters})",
+                table_name=table.name(),
+                parameters={
+                    let mut string = String::new();
+                    for column in table.columns() {
+                        string.push_str(&format!(
+                            "{name} {sql_type} {null}\n",
+                            name=&column.name,
+                            sql_type=column.sql_type,
+                            null=if column.null { "" } else { "not null" }
+                        ))
+                    }
+                    string
+                }
+            );
+            
+            println!("Executing query \"{query}\"");
+            
+            block_on(
+                pool.execute(query.as_str())
+            ).expect(&format!("Unable to migrate table {}", table.name()));
+        }
+    }
 }

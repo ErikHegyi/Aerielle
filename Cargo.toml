@@ -7,4 +7,12 @@ edition = "2024"
 regex = "1.11.1"
 minijinja = { version = "2.11.0", features = ["loader"] }
 futures = "0.3.31"
-sqlx = { version = "0.8.6", features = ["sqlite", "mysql", "postgres"] }
+sqlx = { version = "0.8.6", features = ["sqlite", "mysql", "postgres", "runtime-async-std", "tls-native-tls"], optional = true }
+chrono = { version = "0.4.41", optional = true }
+table_macro = { path = "./src/table_macro", optional = true }
+
+[features]
+_db_must = ["sqlx/runtime-async-std", "sqlx/tls-native-tls", "chrono", "table_macro"]
+database_sqlite = ["sqlx/sqlite", "_db_must"]
+database_mysql = ["sqlx/mysql", "_db_must"]
+database_postgres = ["sqlx/postgres", "_db_must"]
