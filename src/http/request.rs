@@ -120,6 +120,8 @@ impl From<TcpStream> for Request {
             if header.key().as_str() == "Content-Length" {
                 content_length = header.value().parse::<usize>().unwrap_or(0);
             }
+            
+            headers.push(header);
         }
 
         // Read the body
