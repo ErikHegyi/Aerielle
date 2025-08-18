@@ -169,16 +169,23 @@ impl Database {
     where
         T: crate::sql::SQLTable
     {
+        // Clone the pool
         let pool = self.pool.clone();
+
+        // Spawn a new thread
         match thread::spawn(move || {
+            // Get the query
             let binding = T::table().add_string();
             let query = binding.as_str();
+
+            // Execute the query
             block_on(
                 pool.execute(query)
             )
         })
             .join()
-            .expect("Thread crashed unexpectedly while adding a table") {
+            .expect("Thread crashed unexpectedly while adding a table")
+        {
             Ok(_) => println!("Table {} was successfully added", T::table().name),
             Err(e) => eprintln!("Error while adding table {}: {}", T::table().name, e)
         }
