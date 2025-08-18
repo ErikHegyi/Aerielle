@@ -228,7 +228,7 @@ pub fn table(_attribute: TokenStream, item: TokenStream) -> TokenStream {
         // If the default value is empty, provide pre-defined default values
         if default.is_empty() {
             default = match quote! { #sql_type }.to_string().as_str() {
-                "Text" => quote! { "String" },
+                "Text" => quote! { String::from("String") },
                 "Blob" => quote! { Vec::new() },
                 "Boolean" => quote! { false },
                 "Bit" => quote! { false },
@@ -283,8 +283,10 @@ pub fn table(_attribute: TokenStream, item: TokenStream) -> TokenStream {
                     )
                 );
             }*/
+        }
 
-            pub fn table() -> sql::Table {
+        impl sql::SQLTable for #struct_name {
+            fn table() -> sql::Table {
                 sql::Table {
                     name: String::from(#table_name ),
                     primary_key: #primary_key,
