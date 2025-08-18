@@ -164,6 +164,7 @@ impl Database {
         }
     }
 
+    /// Add a table to the database
     pub fn add_table<T>(&mut self)
     where
         T: crate::sql::SQLTable
