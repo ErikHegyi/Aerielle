@@ -51,6 +51,8 @@ pub fn table(_attribute: TokenStream, item: TokenStream) -> TokenStream {
     // Interpret the fields
     let mut columns = Vec::new();  // Columns of the table
     let mut fields = Vec::new();  // Fields of the struct
+    let mut field_names = Vec::new();  // Field names of the struct, without the type
+    let mut get_variables = Vec::new();  // Helper for the From<sql::Row> method
     for field in &input.fields {
         // Field name
         let name =  field.ident
@@ -77,7 +79,14 @@ pub fn table(_attribute: TokenStream, item: TokenStream) -> TokenStream {
         // Add the Rust representations of the SQL columns
         fields.push(
             quote! {
-                pub #name: #ty
+                #name: #ty
+            }
+        );
+
+        // Add the field name
+        field_names.push(
+            quote! {
+                #name
             }
         );
 
@@ -261,15 +270,28 @@ pub fn table(_attribute: TokenStream, item: TokenStream) -> TokenStream {
             true => primary_key = column,
             false => columns.push(column)
         }
+
+        get_variables.push(
+            quote! {
+                #name: row.try_get(#sql_name)?
+            }
+        )
     }
 
     // Write the struct and it's implementations
     let expanded = quote! {
+        #[derive(Debug, Clone)]
         #vis struct #struct_name {
-            #(#fields),*
+            #(pub #fields),*
         }
 
         impl #struct_name {
+            pub fn new(#(#fields),*) -> Self {
+                Self {
+                    #(#field_names),*
+                }
+            }
+
             pub const fn table_name() -> &'static str {
                 #table_name
             }
@@ -296,6 +318,16 @@ pub fn table(_attribute: TokenStream, item: TokenStream) -> TokenStream {
                         vector
                     }
                 }
+            }
+        }
+
+        impl<'r> sqlx::FromRow<'r, sql::SQLRow> for #struct_name {
+            fn from_row(row: &'r sql::SQLRow) -> Result<Self, sqlx::Error> {
+                Ok(
+                    Self {
+                        #(#get_variables),*
+                    }
+                )
             }
         }
     };

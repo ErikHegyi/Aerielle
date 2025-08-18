@@ -6,6 +6,7 @@ use sqlx::mysql::MySqlQueryResult;
 use sqlx::postgres::PgQueryResult;
 use sqlx::sqlite::SqliteQueryResult;
 use crate::sql::Table;
+use sqlx::FromRow;
 
 
 #[cfg(any(
@@ -191,11 +192,64 @@ impl Database {
         }
     }
 
-    pub fn get_table<T>(&mut self) -> Result<(), Error>
+
+    /// Get every row from the given table, and parse it into Rust structs
+    /// ## Example
+    /// ```rust
+    /// use aerielle::*;
+    ///
+    /// #[table]
+    /// struct User {
+    ///     #[primary_key]
+    ///     id: Integer,
+    ///
+    ///     #[sql_name = "username"]
+    ///     name: String
+    /// }
+    ///
+    /// fn main() {
+    ///     let mut db: sql::Database = sql::Database::connect(url)
+    ///     let users: Vec<User> = db.get_table::<User>();
+    /// }
+    /// ```
+    pub fn get_table<T>(&mut self) -> Vec<T>
     where
-        T: crate::sql::SQLTable
+        for <'r> T: crate::sql::SQLTable + sqlx::FromRow<'r, crate::SQLRow>
     {
-        todo!()
+        // Clone the pool for further use
+        let pool = self.pool.clone();
+
+        // Create a new thread
+        let handle = thread::spawn(move || {
+            // Query all the rows from the table
+            let query = format!("SELECT * FROM {}", T::table().name);
+            block_on(
+                sqlx::query(&query).fetch_all(&pool)
+            )
+        })
+            .join()
+            .expect("Thread crashed while querying every row from the table");
+
+        // Test if the query was successful
+        match handle {
+            // If the query was successful, parse the rows into Rust structs
+            Ok(v) => {
+                let mut vector = Vec::with_capacity(v.len());
+                for row in &v {
+                    match T::from_row(row) {
+                        Ok(t) => vector.push(t),
+                        Err(e) => eprintln!("Error while reading in row: {e}")
+                    }
+                }
+                vector
+            },
+
+            // If the query was unsuccessful, print an error and return an empty vector
+            Err(e) => {
+                eprintln!("Unable to query rows from table {}: {e}", T::table().name);
+                Vec::new()
+            }
+        }
     }
 
     pub fn filter_table<T>(&mut self) -> Result<(), Error>
