@@ -22,50 +22,51 @@ impl Table {
         &self.name
     }
     
-    pub fn columns(&self) -> &Vec<Column> {
-        &self.columns
+    pub fn columns(&self) -> Vec<Column> {
+        let mut vec = Vec::with_capacity(self.columns.len() + 1);
+        vec.push(self.primary_key.clone());
+        for column in self.columns.clone() {
+            vec.push(column)
+        }
+        vec
+    }
+
+    /// The table creation string for the current table instance
+    /// ## Example
+    /// The user created a table:
+    /// ```rust
+    /// #[table]
+    /// struct UserTable {
+    ///     #[primary_key]
+    ///     id: Integer,
+    ///
+    ///     #[not_null]
+    ///     username: Text
+    /// }
+    /// ```
+    ///
+    /// Aerielle will automatically translate this, and create a table addition string.
+    /// For `MySQL`, this string would be:
+    /// ```sql
+    /// CREATE TABLE usertable(
+    ///     id INTEGER PRIMARY KEY,
+    ///     username VARCHAR NOT NULL
+    /// )
+    /// ```
+    pub fn add_string(&self) -> String {
+        format!(
+            "CREATE TABLE {table_name}({columns})",
+            table_name=self.name,
+            columns=self.columns()
+                .iter()
+                .map(|c| c.sql_string())
+                .collect::<Vec<String>>()
+                .join(",")
+        )
     }
 }
 
-/*
-#[macro_export]
-macro_rules! table {
-    (
-        $name:ident ($pk: ident) {
-            $($column:ident: $sql_type:ident $(($arg:expr))?),+
-        }
-    ) => {
-        use crate::sql::{Column, SQLType, Table};
-        {
-            let mut columns = Vec::new();
-            let mut pk: Column = Column {
-                name: "id".to_string(),
-                sql_type: SQLType::Integer,
-                null: false
-            };
-            
-            $(
-                if stringify!($column) == stringify!($pk) {
-                    pk = Column {
-                        name: stringify!($column).to_string(),
-                        sql_type: SQLType::$sql_type$( ($arg) )?,
-                        null: false
-                    };
-                } else {
-                    columns.push(
-                        Column {
-                            name: stringify!($column).to_string(),
-                            sql_type: SQLType::$sql_type$( ($arg) )?,
-                            null: false
-                        }
-                    )
-                }
-            )*
-            Table::new(
-                stringify!($name).to_string(),
-                pk,
-                columns
-            )
-        }
-    };
-}*/
+
+pub trait SQLTable {
+    fn table() -> Table;
+}

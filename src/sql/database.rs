@@ -2,7 +2,9 @@ use sqlx;
 use futures::executor::block_on;
 use std::thread;
 use sqlx::{Error, Executor};
+use sqlx::mysql::MySqlQueryResult;
 use sqlx::postgres::PgQueryResult;
+use sqlx::sqlite::SqliteQueryResult;
 use crate::sql::Table;
 
 
@@ -92,17 +94,26 @@ impl Database {
     }
 }
 
+#[cfg(feature = "database_mysql")]
+type QueryResult = MySqlQueryResult;
+
+#[cfg(feature = "database_postgres")]
+type QueryResult = PgQueryResult;
+
+#[cfg(feature = "database_sqlite")]
+type QueryResult = SqliteQueryResult;
+
 
 #[cfg(any(
     feature = "database_mysql",
     feature = "database_postgres",
     feature = "database_sqlite"
 ))]
-impl Database {    
+impl Database {
     pub fn query() { todo!() }
     pub fn insert() { todo!() }
     
-    pub fn execute(&mut self, query: String) -> Result<PgQueryResult, Error> {
+    pub fn execute(&mut self, query: String) -> Result<QueryResult, Error> {
         let pool = self.pool.clone();
         thread::spawn(move || {
            block_on(
@@ -151,5 +162,45 @@ impl Database {
                 pool.execute(query.as_str())
             ).expect(&format!("Unable to migrate table {}", table.name()));
         }
+    }
+
+    pub fn add_table<T>(&mut self)
+    where
+        T: crate::sql::SQLTable
+    {
+        let pool = self.pool.clone();
+        match thread::spawn(move || {
+            let binding = T::table().add_string();
+            let query = binding.as_str();
+            block_on(
+                pool.execute(query)
+            )
+        })
+            .join()
+            .expect("Thread crashed unexpectedly while adding a table") {
+            Ok(_) => println!("Table {} was successfully added", T::table().name),
+            Err(e) => eprintln!("Error while adding table {}: {}", T::table().name, e)
+        }
+    }
+
+    pub fn get_table<T>(&mut self) -> Result<(), Error>
+    where
+        T: crate::sql::SQLTable
+    {
+        todo!()
+    }
+
+    pub fn filter_table<T>(&mut self) -> Result<(), Error>
+    where
+        T: crate::sql::SQLTable
+    {
+        todo!()
+    }
+
+    pub fn add_to_table<T>(&mut self, instance: T) -> Result<(), Error>
+    where
+        T: crate::sql::SQLTable
+    {
+        todo!()
     }
 }

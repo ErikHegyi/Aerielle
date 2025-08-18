@@ -5,7 +5,7 @@ mod row;
 mod column;
 
 pub use database::Database;
-pub use table::Table;
+pub use table::{Table, SQLTable};
 pub use row::{Row, RowValue};
 pub use column::Column;
 pub use sql_types::SQLType;

@@ -31,7 +31,7 @@ pub enum RawSQLType {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SQLType {
     Text,
     Blob,
@@ -44,7 +44,7 @@ pub enum SQLType {
     Time
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SQLValue {
     Text(String),
     Blob(Vec<u8>),
@@ -71,6 +71,24 @@ impl std::fmt::Display for SQLType {
             Self::Date => "DATE".to_string(),
             Self::TimeStamp => "TIMESTAMP".to_string(),
             Self::Time => "TIME".to_string(),
+        })
+    }
+}
+
+
+impl std::fmt::Display for SQLValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            Self::Text(v) => format!("\"{v}\""),
+            Self::Blob(v) => format!("{v:?}"),
+            Self::Boolean(v) => format!("\"{}\"", if *v { "TRUE" } else { "FALSE" }),
+            Self::Bit(v) => format!("{}", if *v { "1" } else { "0" }),
+            Self::Integer(v) => format!("{v}"),
+            Self::Float(v) => format!("{v}"),
+            Self::Date(v) => format!("{v}"),
+            Self::TimeStamp(v) => format!("{v}"),
+            Self::Time(v) => format!("{v}"),
+            Self::Null => String::from("NULL")
         })
     }
 }
