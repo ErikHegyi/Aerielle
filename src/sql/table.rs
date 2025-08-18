@@ -1,5 +1,5 @@
 use sqlx::Executor;
-use crate::sql::{Column, Database, Row};
+use crate::sql::{Column, Database};
 
 
 #[derive(Debug)]
@@ -13,10 +13,6 @@ pub struct Table {
 impl Table {
     pub fn new(name: String, primary_key: Column, columns: Vec<Column>) -> Self {
         Self { name, primary_key, columns }
-    }
-    pub fn query(&self, database: &mut Database) -> Vec<Row>
-    {
-        todo!()
     }
     pub fn name(&self) -> &str {
         &self.name
