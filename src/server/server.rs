@@ -135,6 +135,7 @@ impl WebServer {
         PathBuf: From<P>
     {
         let path = PathBuf::from(path);
+        let body = Self::read_file(&path);
 
         let body = match read_to_string(&path) {
             Ok(s) => s,
