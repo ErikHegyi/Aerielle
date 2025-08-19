@@ -364,6 +364,98 @@ impl WebServer {
                 .to_string()
         )
     }
+
+    /// # Read in a file
+    /// Read in the body of a file
+    /// ## Parameters
+    /// - `file: P` - The path to the file
+    /// ## Returns
+    /// This method returns a string, which contains the contents of the file.
+    /// ## Panicking
+    /// This method panics if:
+    /// - The file can not be found
+    /// - An unknown error causes Rust's std library to not be able to read the file
+    fn read_file<P>(file: P) -> String
+    where
+        P: AsRef<Path> + Debug
+    {
+        match read_to_string(&file) {
+            Ok(body) => body,
+            Err(e) => match e.kind() {
+                ErrorKind::NotFound => panic!("Unable to find file {file:?}."),
+                _ => panic!("Something went wrong while reading in {file:?}: {e}")
+            }
+        }
+    }
+
+    fn list_items_in_dir<P>(dir: P) -> Vec<String>
+    where
+        P: AsRef<Path> + Debug
+    {
+        // Save the files into a vector
+        let mut files = Vec::new();
+
+        // Save the name of the directory
+        let dir_name = Self::dir_name(&dir);
+
+        let file_list = match read_dir(&dir) {
+            Ok(result) => result,
+            Err(e) => panic!("Unable to read in directory {dir:?} because of error {e}")
+        };
+
+        for file in file_list {
+            let file = file.unwrap();
+
+            let file_type = match file.file_type() {
+                Ok(ty) => ty,
+                Err(e) => {
+                    eprintln!("Unable to read in file type of {path:?} because of error {e}", path = file.path());
+                    continue
+                }
+            };
+
+            let file_name = match file.file_name().to_str() {
+                Some(string) => string.to_string(),
+                None => {
+                    eprintln!("Unable to find name of {path:?}, continuing...", path=file.path());
+                    continue
+                }
+            };
+
+            if file_type.is_dir() {
+                let items_in_dir = Self::list_items_in_dir(file.path());
+                for item in items_in_dir {
+                    files.push(format!("{dir_name}/{item}"));
+                }
+            }
+            else if file_type.is_file() {
+                files.push(
+                    format!("{dir_name}/{file_name}")
+                );
+            }
+            else {
+                continue
+            }
+        }
+
+        files
+    }
+
+    fn dir_name<P>(dir: P) -> String
+    where
+        P: AsRef<Path> + Debug
+    {
+        if !dir.as_ref().is_dir() {
+            panic!("Can not get the directory name of something that is not a directory")
+        }
+        match dir.as_ref().file_name() {
+            Some(dir_name) => match dir_name.to_str() {
+                Some(string) => string.to_string(),
+                None => panic!("Unable to read in directory name of {dir:?}")
+            },
+            None => panic!("Unable to read in directory name of {dir:?}")
+        }
+    }
 }
 
 
