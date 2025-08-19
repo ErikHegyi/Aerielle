@@ -7,6 +7,7 @@ use std::{
     fs::read_to_string,
     result::Result as StdResult
 };
+use std::path::Path;
 use crate::{
     http::{Request, Response, Status},
     html::render
@@ -95,8 +96,13 @@ impl WebServer {
             self.add_template(path);
         }
     }
-    
-    pub fn add_template(&mut self, path: PathBuf) {
+
+    pub fn add_template<P>(&mut self, path: P)
+    where
+        PathBuf: From<P>
+    {
+        let path = PathBuf::from(path);
+
         let body = match read_to_string(&path) {
             Ok(s) => s,
             Err(e) => match e.kind() {
