@@ -271,7 +271,41 @@ impl WebServer {
         }
         panic!("Static files are disabled, but a static file is expected: {url}");
     }
-    
+
+    /// # Render an HTML template
+    /// This method renders an HTML template, which was defined with the **Jinja** syntax.
+    /// ## Parameters
+    /// - `template: &str` -> The name of the template
+    /// - `context: jinja::Value` -> The context, which will be passed to the template. It should be defined with minijinja's `context!` macro.
+    /// ## Returns
+    /// This method returns a `Response`.
+    /// If the rendering was successful, it returns a `STATUS 200 OK`.
+    /// If the rendering was unsuccessful, it returns a `STATUS 500 SERVER ERROR`.
+    /// ## Example
+    /// ```rust
+    /// use aerielle::*;
+    ///
+    /// fn index(server: &WebServer, _request: &Request) -> Response {
+    ///     server.render(
+    ///         "index.html",
+    ///         context!(
+    ///             title => "Aerielle Tutorial"
+    ///         )
+    ///     )
+    /// }
+    ///
+    /// fn main() {
+    ///     // Create the server
+    ///     let mut server = WebServer::new();
+    ///
+    ///     // Add the path
+    ///     // A request to "/" will run the "index" function
+    ///     server.add_path("/", index);
+    ///
+    ///     // Start the server and listen to requests
+    ///     server.start().unwrap();
+    /// }
+    /// ```
     pub fn render(&self, template: &str, context: jinja::Value) -> Response {
         render(self, template, context)
     }
