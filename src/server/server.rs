@@ -390,6 +390,10 @@ impl WebServer {
         }
     }
 
+    /// List every single item in a directory, including items in its subdirectory
+    /// Return a vector of strings, where each element is the file name of a file in the
+    /// following format: `dir/name.ext`
+    /// If the file is located in a subdirectory, then it's name will be `dir/subdirectory/name.ext`
     fn list_items_in_dir<P>(dir: P) -> Vec<String>
     where
         P: AsRef<Path> + Debug
@@ -400,6 +404,7 @@ impl WebServer {
         // Save the name of the directory
         let dir_name = Self::dir_name(&dir);
 
+        // Get a list of the files inside the directory
         let file_list = match read_dir(&dir) {
             Ok(result) => result,
             Err(e) => panic!("Unable to read in directory {dir:?} because of error {e}")
@@ -408,6 +413,8 @@ impl WebServer {
         for file in file_list {
             let file = file.unwrap();
 
+            // Get the file type
+            // Fail silently: if an error is encountered, continue
             let file_type = match file.file_type() {
                 Ok(ty) => ty,
                 Err(e) => {
@@ -416,6 +423,8 @@ impl WebServer {
                 }
             };
 
+            // Get the file name
+            // Fail silently: if an error is encountered, continue
             let file_name = match file.file_name().to_str() {
                 Some(string) => string.to_string(),
                 None => {
@@ -424,19 +433,24 @@ impl WebServer {
                 }
             };
 
+            // If the file is a directory,
+            // use recursion to read in every item from the dir
+            // and append the current dir to the front of the file names
             if file_type.is_dir() {
                 let items_in_dir = Self::list_items_in_dir(file.path());
                 for item in items_in_dir {
-                    files.push(format!("{dir_name}/{item}"));
+                    files.push(
+                        format!("{dir_name}/{item}")
+                    );
                 }
             }
+
+            // If the file is a real file,
+            // simply add the current directory's name to the front and save it
             else if file_type.is_file() {
                 files.push(
                     format!("{dir_name}/{file_name}")
                 );
-            }
-            else {
-                continue
             }
         }
 
