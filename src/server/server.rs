@@ -97,6 +97,38 @@ impl WebServer {
         }
     }
 
+    /// # Add template
+    /// Adds a template to the WebServer's Jinja environment.
+    /// Useful in case the user wishes to add templates from outside the `templates` folder.
+    /// ## Parameters
+    /// - `path: P` -> The path to the HTML file
+    /// ## Return
+    /// This method does not return anything.
+    /// ## Panicking
+    /// The method panics, if:
+    /// - the contents of the file can not be read
+    /// - the name of the file can not be read
+    /// - the name of the file can not be converted from `&OsStr` to `&str`
+    /// - the template contains a syntax error, and `minijinja` can not read it
+    /// ## Example
+    /// ```rust
+    /// use std::path::PathBuf;
+    /// use aerielle::*;
+    ///
+    /// fn main() {
+    ///     // Define the path
+    ///     let path = "C:\\User\\Path\\To\\The\\Template.html";
+    ///
+    ///     // Create the server
+    ///     let mut server = WebServer::new();
+    ///
+    ///     // Add the path to the server
+    ///     server.add_template(path);  // The template has now been added under the name "Template.html"
+    ///
+    ///     // Start responding to requests
+    ///     server.start().unwrap();
+    /// }
+    /// ```
     pub fn add_template<P>(&mut self, path: P)
     where
         PathBuf: From<P>
