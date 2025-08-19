@@ -418,7 +418,7 @@ impl WebServer {
             let file_type = match file.file_type() {
                 Ok(ty) => ty,
                 Err(e) => {
-                    eprintln!("Unable to read in file type of {path:?} because of error {e}", path = file.path());
+                    eprintln!("Unable to read in file type of {path:?} because of error {e}", path=file.path());
                     continue
                 }
             };
