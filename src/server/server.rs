@@ -7,6 +7,8 @@ use std::{
     fs::read_to_string,
     result::Result as StdResult
 };
+use std::fmt::Debug;
+use std::path::Path;
 use crate::{
     http::{Request, Response, Status},
     html::render
