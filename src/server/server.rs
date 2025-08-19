@@ -155,6 +155,58 @@ impl WebServer {
             Err(e) => panic!("Unable to add template {path:?}: {e}")
         }
     }
+
+    /// # Add a template with a custom name
+    /// Adds a template to the WebServer's Jinja environment with a name.
+    /// Useful in case the user wishes to add templates from outside the `templates` folder,
+    /// and also wishes to name it.
+    /// ## Parameters
+    /// - `path: P` -> The path to the HTML file
+    /// - `name: String` -> The name of the template
+    /// ## Return
+    /// This method does not return anything.
+    /// ## Panicking
+    /// The method panics, if:
+    /// - the contents of the file can not be read
+    /// - the name of the file can not be read
+    /// - the name of the file can not be converted from `&OsStr` to `&str`
+    /// - the template contains a syntax error, and `minijinja` can not read it
+    /// ## Example
+    /// ```rust
+    /// use std::path::PathBuf;
+    /// use aerielle::*;
+    ///
+    /// fn main() {
+    ///     // Define the path
+    ///     let path = "C:\\User\\Path\\To\\The\\Template.html";
+    ///
+    ///     // Define the name
+    ///     let name = String::from("MyTemplate.html");
+    ///
+    ///     // Create the server
+    ///     let mut server = WebServer::new();
+    ///
+    ///     // Add the path to the server
+    ///     server.add_template_named(path, name);  // The template has now been added under the name "MyTemplate.html"
+    ///
+    ///     // Start responding to requests
+    ///     server.start().unwrap();
+    /// }
+    /// ```
+    pub fn add_template_named<P>(&mut self, path: P, name: String)
+    where
+        PathBuf: From<P>
+    {
+        let path = PathBuf::from(path);
+
+        let body = Self::read_file(&path);
+
+        match self.environment
+            .add_template_owned(name, body) {
+            Ok(_) => (),
+            Err(e) => panic!("Unable to add template {path:?}: {e}")
+        }
+    }
     
     pub fn get_template(&self, name: &str) -> StdResult<jinja::Template, jinja::Error> {
         self.get_environment().get_template(name)
