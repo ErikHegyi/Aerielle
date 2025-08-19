@@ -457,13 +457,17 @@ impl WebServer {
         files
     }
 
+    /// Get the directory name of the given directory
     fn dir_name<P>(dir: P) -> String
     where
         P: AsRef<Path> + Debug
     {
+        // If the given path does not lead to a directory, panic
         if !dir.as_ref().is_dir() {
             panic!("Can not get the directory name of something that is not a directory")
         }
+
+        // If the given path does lead to a directory, read its name
         match dir.as_ref().file_name() {
             Some(dir_name) => match dir_name.to_str() {
                 Some(string) => string.to_string(),
