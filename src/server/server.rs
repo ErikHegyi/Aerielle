@@ -137,13 +137,6 @@ impl WebServer {
         let path = PathBuf::from(path);
         let body = Self::read_file(&path);
 
-        let body = match read_to_string(&path) {
-            Ok(s) => s,
-            Err(e) => match e.kind() {
-                ErrorKind::NotFound => panic!("Unable to find file \"{path:?}\"."),
-                _ => panic!("Something went wrong while reading in \"{path:?}\": {e}")
-            }
-        };
         let name = match path.file_name() {
             Some(file_name) => match file_name.to_str() {
                 Some(string) => string.to_string(),
