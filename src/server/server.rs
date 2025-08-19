@@ -85,16 +85,22 @@ impl WebServer {
     }
     
     pub fn read_in_templates(&mut self) {
-        let files = match read_dir(self.templates.as_path()) {
-            Ok(f) => f,
-            Err(e) => panic!("Unable to read in templates folder: {e}")
-        };
-        
-        for file in files {
-            let file = file.unwrap();
-            // todo!("Read in subdirectories")
-            let path = file.path();
-            self.add_template(path);
+        let templates = Self::list_items_in_dir(self.templates.as_path());
+        let templates_dir_name = Self::dir_name(self.templates.as_path());
+
+        for template in templates {
+            let prefix = format!("{}/", templates_dir_name);
+            let name_without_prefix = match template.strip_prefix(prefix.as_str()) {
+                Some(string) => string.to_string(),
+                None => panic!("Unable to remove the templates folder prefix from the total path")
+            };
+
+            let path = self.templates.join(&name_without_prefix.replace('/', "\\"));
+
+            self.add_template_named(
+                path,
+                name_without_prefix
+            )
         }
     }
 
