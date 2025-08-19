@@ -91,23 +91,31 @@ impl WebServer {
         for file in files {
             let file = file.unwrap();
             // todo!("Read in subdirectories")
-            let name = file.file_name().display().to_string();
-            self.add_template(name);
+            let path = file.path();
+            self.add_template(path);
         }
     }
     
-    pub fn add_template(&mut self, name: String) {
-        let body = match read_to_string(self.templates.join(&name)) {
+    pub fn add_template(&mut self, path: PathBuf) {
+        let body = match read_to_string(&path) {
             Ok(s) => s,
             Err(e) => match e.kind() {
-                ErrorKind::NotFound => panic!("Unable to find file \"{name}\" in templates folder \"{folder}\"", folder=self.templates.display()),
-                _ => panic!("Something went wrong while reading in \"{name}\": {e}")
+                ErrorKind::NotFound => panic!("Unable to find file \"{path:?}\"."),
+                _ => panic!("Something went wrong while reading in \"{path:?}\": {e}")
             }
         };
+        let name = match path.file_name() {
+            Some(file_name) => match file_name.to_str() {
+                Some(string) => string.to_string(),
+                None => panic!("Unable to convert file name of {path:?} from &OsStr to &str")
+            },
+            None => panic!("Unable to read the file name of {path:?}")
+        };
+
         match self.environment
-            .add_template_owned(name.clone(), body) {
+            .add_template_owned(name, body) {
             Ok(_) => (),
-            Err(e) => panic!("Unable to add template {name}: {e}")
+            Err(e) => panic!("Unable to add template {path:?}: {e}")
         }
     }
     
