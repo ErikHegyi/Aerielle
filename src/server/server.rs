@@ -470,7 +470,7 @@ impl WebServer {
         }
     }
 
-    /// List every single item in a directory, including items in its subdirectory
+    /// List every single item in a directory, including items in its subdirectory.
     /// Return a vector of strings, where each element is the file name of a file in the
     /// following format: `dir/name.ext`
     /// If the file is located in a subdirectory, then it's name will be `dir/subdirectory/name.ext`
