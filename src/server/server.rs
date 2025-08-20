@@ -434,6 +434,25 @@ impl WebServer {
     }
     
     /* UTILITY FUNCTIONS */
+    /// # Get local IP address
+    /// This method tries to get the local IP address, returning it in a string format.
+    /// It does **not** return a port.
+    /// ## Parameters
+    /// This method takes no parameters.
+    /// ## Returns
+    /// This method returns a `std::io::Result<String>`, with the `String` being
+    /// the string representation of the IP address.
+    /// ## Example
+    /// ```rust
+    /// use aerielle::*;
+    ///
+    /// fn main() {
+    ///     // Get the local IP address
+    ///     let ip = WebServer::local_ip_address();
+    ///
+    ///     println!("My local IP address is: {ip}.");
+    /// }
+    /// ```
     pub fn local_ip_address() -> Result<String> {
         let socket: UdpSocket = UdpSocket::bind("0.0.0.0:0")?;
         socket.connect("8.8.8.8:80")?;
