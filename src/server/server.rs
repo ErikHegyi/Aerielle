@@ -228,6 +228,34 @@ impl WebServer {
     }
     
     /* ACCESS PROPERTIES */
+    /// # Are static files enabled?
+    /// This method tests whether the static files are enabled.
+    /// ## Parameters
+    /// This method does not accept any parameters.
+    /// ## Returns
+    /// This method returns a `boolean` value:
+    /// - `true` if static files are enabled
+    /// - `false` if static files are disabled
+    /// ## Example
+    /// ```rust
+    /// use aerielle::*
+    ///
+    /// fn main() {
+    ///     // Create the server
+    ///     let mut server = WebServer::new();
+    ///
+    ///     // Print out whether static files are enabled
+    ///     // Output: "Static files are enabled."
+    ///     println!("Static files are {}.", if server.static_enabled() { "enabled" } else { "disabled" });
+    ///
+    ///     // Disable static files
+    ///     server.disable_static();
+    ///
+    ///     // Print out whether static files are enabled
+    ///     // Output: "Static files are disabled."
+    ///     println!("Static files are {}.", if server.static_enabled() { "enabled" } else { "disabled" });
+    /// }
+    /// ```
     pub fn static_enabled(&self) -> bool {
         self.static_dir != None && self.static_url != None
     }
