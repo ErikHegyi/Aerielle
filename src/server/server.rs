@@ -372,6 +372,24 @@ impl WebServer {
     }
 
     /* START SERVER */
+    /// # Start the server
+    /// This method tells the server to start listening to requests, blocking the current thread.
+    /// ## Parameters
+    /// This method takes no parameters.
+    /// ## Returns
+    /// This method returns an `std::io::Result<()>`.
+    /// ## Example
+    /// ```rust
+    /// use aerielle::*;
+    ///
+    /// fn main() {
+    ///     // Create the server
+    ///     let mut server = WebServer::new();
+    ///
+    ///     // Tell the server to start listening to requests
+    ///     server.start().unwrap();
+    /// }
+    /// ```
     pub fn start(&mut self) -> Result<()> {
         // Read in templates
         self.read_in_templates();
