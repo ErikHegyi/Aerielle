@@ -9,6 +9,7 @@ use std::{
 };
 use std::fmt::{Display, Formatter};
 use std::io::Write;
+use std::net::SocketAddr;
 use crate::http::{
     Response,
     Method,
@@ -24,6 +25,8 @@ pub struct Request {
     pub version: String,
     pub headers: Vec<Header>,
     pub body: String,
+
+    pub ip: Option<SocketAddr>,
 
     stream: TcpStream
 }
@@ -55,6 +58,15 @@ impl Request {
 
 impl From<TcpStream> for Request {
     fn from(value: TcpStream) -> Self {
+        // Get the client's IP address
+        let ip_address = match value.peer_addr() {
+            Ok(address) => Some(address),
+            Err(e) => {
+                eprintln!("Unable to get client's IP address: {e}");
+                None
+            }
+        };
+
         // Create placeholder values
         let method: Method;
         let mut url: String;
@@ -144,6 +156,7 @@ impl From<TcpStream> for Request {
             version,
             headers,
             body,
+            ip: ip_address,
             stream: value
         }
 
