@@ -36,11 +36,11 @@ impl From<String> for Header {
                     Some(i) => i,
                     None => panic!("Unable to parse header: \"{value}\"")
                 };
-                let (key, value) = value.split_at(index);
+                let (key, value) = value.trim().split_at(index);
 
                 Self {
                     key: key.to_string(),
-                    value: value.to_string()
+                    value: value[2..].to_string()
                 }
             }
         }
